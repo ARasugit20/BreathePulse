@@ -1,4 +1,4 @@
-# Databutton app
+# BreatheThePulse
 
 This project consists of a FastAPI backend server and a React + TypeScript frontend application exported from Databutton.
 
