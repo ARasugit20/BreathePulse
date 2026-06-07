@@ -1,11 +1,11 @@
 from collections import defaultdict
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import BreathingSession
-from app.models.schemas import AnalyticsSummary, WeeklyStats
+from app.db.models import BreathingSession, User
+from app.models.schemas import AnalyticsSummary, DailyGoalProgress, HrvTrendPoint, WeeklyStats
 
 
 def _compute_streak(session_dates: list[date]) -> tuple[int, int]:
@@ -39,7 +39,8 @@ def _compute_streak(session_dates: list[date]) -> tuple[int, int]:
     return current, longest
 
 
-async def get_analytics_summary(db: AsyncSession, user_id: str) -> AnalyticsSummary:
+async def get_analytics_summary(db: AsyncSession, user: User) -> AnalyticsSummary:
+    user_id = user.id
     result = await db.execute(
         select(BreathingSession).where(BreathingSession.user_id == user_id)
     )
@@ -77,6 +78,29 @@ async def get_analytics_summary(db: AsyncSession, user_id: str) -> AnalyticsSumm
     days_with_sessions = len({s.completed_at.date() for s in sessions})
     consistency_score = round((days_with_sessions / 7) * 100, 1) if sessions else 0.0
 
+    hrv_sessions = [s for s in sessions if s.hrv_ms is not None]
+    hrv_trend = [
+        HrvTrendPoint(
+            date=s.completed_at.date().isoformat(),
+            hrv_ms=s.hrv_ms,  # type: ignore[arg-type]
+            session_id=s.id,
+        )
+        for s in sorted(hrv_sessions, key=lambda x: x.completed_at)[-14:]
+    ]
+
+    today = date.today()
+
+    def _local_date(dt: datetime) -> date:
+        if dt.tzinfo is None:
+            return dt.date()
+        return dt.astimezone().date()
+
+    today_minutes = sum(
+        s.duration_seconds / 60 for s in sessions if _local_date(s.completed_at) == today
+    )
+    goal = user.daily_goal_minutes
+    percent = min(round((today_minutes / goal) * 100, 1), 100) if goal > 0 else 0
+
     return AnalyticsSummary(
         total_sessions=total_sessions,
         total_minutes=round(total_minutes, 1),
@@ -86,4 +110,11 @@ async def get_analytics_summary(db: AsyncSession, user_id: str) -> AnalyticsSumm
         avg_hrv_ms=round(avg_hrv, 1) if avg_hrv else None,
         weekly_stats=weekly_stats,
         pattern_breakdown=dict(pattern_breakdown),
+        hrv_trend=hrv_trend,
+        daily_goal=DailyGoalProgress(
+            goal_minutes=goal,
+            completed_minutes=round(today_minutes, 1),
+            percent_complete=percent,
+            goal_met=today_minutes >= goal,
+        ),
     )

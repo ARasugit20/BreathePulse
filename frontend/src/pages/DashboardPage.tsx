@@ -4,6 +4,8 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Line,
+  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -14,6 +16,7 @@ import {
 import { format, parseISO } from "date-fns";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { api } from "@/services/api";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -49,6 +52,14 @@ export function DashboardPage() {
       }))
     : [];
 
+  const hrvTrendData =
+    analytics?.hrv_trend.map((point) => ({
+      date: format(parseISO(point.date), "MMM d"),
+      hrv: point.hrv_ms,
+    })) ?? [];
+
+  const dailyGoal = analytics?.daily_goal;
+
   const stats = [
     { label: "Total Sessions", value: analytics?.total_sessions ?? 0 },
     { label: "Total Minutes", value: analytics?.total_minutes ?? 0 },
@@ -64,6 +75,24 @@ export function DashboardPage() {
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="mt-2 text-muted-foreground">Your breathing wellness at a glance</p>
       </div>
+
+      {dailyGoal && (
+        <Card className={dailyGoal.goal_met ? "border-accent" : undefined}>
+          <CardHeader>
+            <CardTitle>Today&apos;s Goal</CardTitle>
+            <CardDescription>
+              {dailyGoal.completed_minutes} of {dailyGoal.goal_minutes} minutes
+              {dailyGoal.goal_met ? " — goal met!" : ""}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Progress value={dailyGoal.percent_complete} aria-label="Daily goal progress" />
+            <p className="mt-2 text-sm text-muted-foreground">
+              {dailyGoal.percent_complete}% complete
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {stats.map((stat) => (
@@ -138,6 +167,44 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>HRV Trend</CardTitle>
+          <CardDescription>Heart rate variability across recent sessions</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {hrvTrendData.length > 0 ? (
+            <div className="h-64" aria-label="HRV trend line chart">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={hrvTrendData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="date" className="text-xs" />
+                  <YAxis className="text-xs" unit=" ms" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="hrv"
+                    stroke="hsl(172, 66%, 50%)"
+                    strokeWidth={2}
+                    dot={{ fill: "hsl(172, 66%, 50%)" }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="flex h-32 items-center justify-center text-muted-foreground">
+              Complete sessions with HRV data to see your trend
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

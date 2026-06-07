@@ -10,6 +10,8 @@ async def test_analytics_summary_empty(client: AsyncClient):
     assert data["total_sessions"] == 0
     assert data["current_streak"] == 0
     assert len(data["weekly_stats"]) == 7
+    assert data["hrv_trend"] == []
+    assert data["daily_goal"]["goal_minutes"] == 10
 
 
 @pytest.mark.asyncio
@@ -30,3 +32,5 @@ async def test_analytics_after_sessions(client: AsyncClient):
     assert data["total_sessions"] == 1
     assert data["total_minutes"] == 5.0
     assert data["pattern_breakdown"]["box"] == 1
+    assert len(data["hrv_trend"]) == 1
+    assert data["daily_goal"]["completed_minutes"] == 5.0

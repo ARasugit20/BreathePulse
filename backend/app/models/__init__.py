@@ -1,6 +1,8 @@
 from app.models.schemas import (
     AnalyticsSummary,
     BreathingPatternResponse,
+    DailyGoalProgress,
+    HrvTrendPoint,
     SessionCreate,
     SessionResponse,
     UserProfileResponse,

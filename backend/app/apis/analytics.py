@@ -18,4 +18,4 @@ async def analytics_summary(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> AnalyticsSummary:
     db_user = await get_or_create_user(db, user)
-    return await get_analytics_summary(db, db_user.id)
+    return await get_analytics_summary(db, db_user)

@@ -42,6 +42,19 @@ export interface WeeklyStat {
   total_minutes: number;
 }
 
+export interface HrvTrendPoint {
+  date: string;
+  hrv_ms: number;
+  session_id: string;
+}
+
+export interface DailyGoalProgress {
+  goal_minutes: number;
+  completed_minutes: number;
+  percent_complete: number;
+  goal_met: boolean;
+}
+
 export interface AnalyticsSummary {
   total_sessions: number;
   total_minutes: number;
@@ -51,6 +64,8 @@ export interface AnalyticsSummary {
   avg_hrv_ms: number | null;
   weekly_stats: WeeklyStat[];
   pattern_breakdown: Record<string, number>;
+  hrv_trend: HrvTrendPoint[];
+  daily_goal: DailyGoalProgress;
 }
 
 export interface PatternTiming {

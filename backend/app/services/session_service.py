@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,6 +28,7 @@ async def create_session(
         avg_heart_rate=data.avg_heart_rate,
         hrv_ms=data.hrv_ms,
         notes=data.notes,
+        completed_at=datetime.now().astimezone(),
     )
     db.add(session)
     await db.flush()

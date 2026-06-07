@@ -64,6 +64,19 @@ class WeeklyStats(BaseModel):
     total_minutes: float
 
 
+class HrvTrendPoint(BaseModel):
+    date: str
+    hrv_ms: float
+    session_id: str
+
+
+class DailyGoalProgress(BaseModel):
+    goal_minutes: int
+    completed_minutes: float
+    percent_complete: float
+    goal_met: bool
+
+
 class AnalyticsSummary(BaseModel):
     total_sessions: int
     total_minutes: float
@@ -73,3 +86,5 @@ class AnalyticsSummary(BaseModel):
     avg_hrv_ms: float | None
     weekly_stats: list[WeeklyStats]
     pattern_breakdown: dict[str, int]
+    hrv_trend: list[HrvTrendPoint]
+    daily_goal: DailyGoalProgress
