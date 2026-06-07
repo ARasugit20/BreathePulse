@@ -13,6 +13,9 @@ const CalibrationPage = lazy(() =>
 const ProfilePage = lazy(() =>
   import("@/pages/ProfilePage").then((m) => ({ default: m.ProfilePage })),
 );
+const HistoryPage = lazy(() =>
+  import("@/pages/HistoryPage").then((m) => ({ default: m.HistoryPage })),
+);
 const NotFoundPage = lazy(() =>
   import("@/pages/NotFoundPage").then((m) => ({ default: m.NotFoundPage })),
 );
@@ -52,6 +55,14 @@ export const router = createBrowserRouter([
         element: (
           <SuspenseWrapper>
             <CalibrationPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: "/history",
+        element: (
+          <SuspenseWrapper>
+            <HistoryPage />
           </SuspenseWrapper>
         ),
       },

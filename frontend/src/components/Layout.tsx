@@ -1,4 +1,4 @@
-import { Activity, BarChart3, Settings, Wind } from "lucide-react";
+import { Activity, BarChart3, History, Settings, Wind } from "lucide-react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 
 import { cn } from "@/utils/cn";
@@ -6,6 +6,7 @@ import { cn } from "@/utils/cn";
 const navItems = [
   { to: "/", label: "Breathe", icon: Wind },
   { to: "/dashboard", label: "Dashboard", icon: BarChart3 },
+  { to: "/history", label: "History", icon: History },
   { to: "/calibration", label: "Calibration", icon: Activity },
   { to: "/profile", label: "Profile", icon: Settings },
 ];
