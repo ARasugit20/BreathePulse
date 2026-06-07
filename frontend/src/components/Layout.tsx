@@ -1,6 +1,7 @@
 import { Activity, BarChart3, History, Settings, Wind } from "lucide-react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { cn } from "@/utils/cn";
 
 const navItems = [
@@ -24,6 +25,8 @@ export function Layout() {
             </div>
             BreathePulse
           </Link>
+          <div className="flex items-center gap-2">
+          <ThemeToggle />
           <nav className="hidden gap-1 md:flex" aria-label="Main navigation">
             {navItems.map(({ to, label, icon: Icon }) => (
               <Link
@@ -41,6 +44,7 @@ export function Layout() {
               </Link>
             ))}
           </nav>
+          </div>
         </div>
       </header>
 
