@@ -1,18 +1,25 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Pause, Play, RotateCcw, Volume2, VolumeX } from "lucide-react";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
 import { BreathingRing } from "@/components/BreathingRing";
 import { PatternSelector } from "@/components/PatternSelector";
+import { SessionNotesDialog } from "@/components/SessionNotesDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useBreathingEngine } from "@/hooks/useBreathingEngine";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { api } from "@/services/api";
 import { useAuthStore } from "@/stores/authStore";
 import { useSessionStore } from "@/stores/sessionStore";
-import { getPhaseDuration, generateSimulatedHeartRate, generateSimulatedHRV, PATTERN_TIMINGS } from "@/utils/breathing";
+import {
+  generateSimulatedHeartRate,
+  generateSimulatedHRV,
+  getPhaseDuration,
+  PATTERN_TIMINGS,
+} from "@/utils/breathing";
 
 export function HomePage() {
   const { selectedPattern, cycles, audioEnabled, setPattern, setCycles, setAudioEnabled } =
@@ -21,28 +28,41 @@ export function HomePage() {
   const queryClient = useQueryClient();
   const timing = PATTERN_TIMINGS[selectedPattern];
 
+  const [pendingStats, setPendingStats] = useState<{ duration: number; cycles: number } | null>(
+    null,
+  );
+  const [showNotesDialog, setShowNotesDialog] = useState(false);
+
   const saveSession = useMutation({
     mutationFn: (data: Parameters<typeof api.createSession>[0]) => api.createSession(data, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
       toast.success("Session saved!");
+      setPendingStats(null);
+      setShowNotesDialog(false);
     },
     onError: () => toast.error("Failed to save session"),
   });
 
-  const onSessionComplete = useCallback(
-    (stats: { duration: number; cycles: number }) => {
+  const submitSession = useCallback(
+    (stats: { duration: number; cycles: number }, notes?: string) => {
       saveSession.mutate({
         pattern_slug: selectedPattern,
         duration_seconds: stats.duration,
         cycles_completed: stats.cycles,
         avg_heart_rate: generateSimulatedHeartRate(),
         hrv_ms: generateSimulatedHRV(),
+        notes,
       });
     },
     [saveSession, selectedPattern],
   );
+
+  const onSessionComplete = useCallback((stats: { duration: number; cycles: number }) => {
+    setPendingStats(stats);
+    setShowNotesDialog(true);
+  }, []);
 
   const engine = useBreathingEngine({
     pattern: selectedPattern,
@@ -51,15 +71,33 @@ export function HomePage() {
     onSessionComplete,
   });
 
+  useKeyboardShortcuts({
+    enabled: !showNotesDialog,
+    onStart: engine.status === "idle" ? engine.start : undefined,
+    onResume: engine.status === "paused" ? engine.resume : undefined,
+    onPause: engine.status === "running" ? engine.pause : undefined,
+    onReset:
+      engine.status === "paused" || engine.status === "completed" ? engine.reset : undefined,
+  });
+
   const phaseDuration = getPhaseDuration(timing, engine.currentPhase);
   const isActive = engine.status === "running" || engine.status === "paused";
 
   return (
     <div className="space-y-8 pb-20 md:pb-8">
+      <SessionNotesDialog
+        open={showNotesDialog}
+        onSave={(notes) => pendingStats && submitSession(pendingStats, notes || undefined)}
+        onSkip={() => pendingStats && submitSession(pendingStats)}
+      />
+
       <div className="text-center">
         <h1 className="text-3xl font-bold tracking-tight">Guided Breathing</h1>
         <p className="mt-2 text-muted-foreground">
           Choose a pattern, set your cycles, and breathe with the visual guide
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Shortcuts: Space/Enter to start · P to pause · Esc to reset
         </p>
       </div>
 
@@ -151,7 +189,7 @@ export function HomePage() {
           )}
         </div>
 
-        {engine.status === "completed" && (
+        {engine.status === "completed" && !showNotesDialog && (
           <p className="text-center text-accent font-medium" role="status">
             Session complete! Great work — your progress has been saved.
           </p>
